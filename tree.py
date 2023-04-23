@@ -202,3 +202,116 @@ class Tree:
 
         # once it finishes recursive calls, return subtree's root node
         return node
+
+    def __dist(self, point1: List[float], point2: List[float]) -> float:
+        """Compute Euclidean distance between two 2d-points.
+        ------------------------------------------------------------------------
+        Args:
+            point1: first point's coords
+            point2: second point's coords
+        Returns:
+            dist: Euclidean distance between point1 and point2"""
+        # cast to numpy arrays
+        point1, point2 = np.array(point1), np.array(point2)
+        dist = np.sqrt(np.sum((point1 - point2)**2)) # compute distance
+
+        return dist
+
+    def __min_dist_region(self, point: List[float], node: TreeNode):
+        """Function to compute minimum distance from a point to the rectangular
+        region defined by a 2d-tree splitting node.
+        ------------------------------------------------------------------------
+        Args:
+            point: (2,)-shape list containing point of interest xy coordinates
+            node: splitting node whose rectangular region is to be considered
+        Returns:
+            dist_min: minimum distance from point to region defined by node"""
+        if node == None:
+            return math.inf
+
+        xp, yp = point
+        xmin, xmax = node.xmin, node.xmax
+        ymin, ymax = node.ymin, node.ymax
+
+        xin_reg = (xmin <= xp and xp <= xmax) # is xp in [xmin, xmax]?
+        yin_reg = (ymin <= yp and yp <= ymax) # is yp in [ymin, ymax]?
+
+        if xin_reg:
+            dist_min = min(np.abs(yp - ymin), np.abs(yp - ymax))
+        elif yin_reg:
+            dist_min = min(np.abs(xp - xmin), np.abs(xp - xmax))
+        else: # point does not intersect neither [xmin, xmax] nor [ymin, ymax]
+            if xp < xmin:
+                if yp < ymin:
+                    dist_min = self.__dist([xp, yp], [xmin, ymin])
+                else:
+                    dist_min = self.__dist([xp, yp], [xmin, ymax])
+            else:
+                if yp < ymin:
+                    dist_min = self.__dist([xp, yp], [xmax, ymin])
+                else:
+                    dist_min = self.__dist([xp, yp], [xmax, ymax])
+
+        return dist_min
+
+    def nearest_neighbor(
+            self, 
+            query: List[float], 
+            node: TreeNode,
+            dmin: int = math.inf,
+            nn: TreeNode = None) -> TreeNode:
+        """Given a query node, find nearest neighbor among the subtree nodes.
+        ------------------------------------------------------------------------
+        Args:
+            query: list of query coords
+            node: subtree node
+            dmin: current nearest distance
+            nn: current nearest neighbor node
+        Returns:
+            nearest: nearest neighbor to query node in subtree rooted at node"""
+        # compute distance from query to node and update dmin if applicable
+        xq, yq = query
+        if node != None:
+            d = self.__dist([xq, yq], [node.x, node.y])
+            if d < dmin:
+                dmin = d
+                nn = node
+
+            # find where query is located with respect to subtree root node
+            if node.split_x == True:
+                if xq <= node.x: # explore left subtree
+                    dmin, nn = self.nearest_neighbor(query, node.left,
+                                                     dmin=dmin, nn=nn)
+                    # compute min distance to region defined by right node
+                    dist_region = self.__min_dist_region(query, node.right)
+                    if dist_region < dmin:
+                        # explore right subtree
+                        dmin, nn = self.nearest_neighbor(query, node.right,
+                                                         dmin=dmin, nn=nn)
+                else: # explore right subtree
+                    dmin, nn = self.nearest_neighbor(query, node.right, 
+                                                     dmin=dmin, nn=nn)
+                    dist_region = self.__min_dist_region(query, node.left)
+                    if dist_region < dmin:
+                        # explore left subtree
+                        dmin, nn = self.nearest_neighbor(query, node.left,
+                                                         dmin=dmin, nn=nn)
+            else:
+                if yq <= node.y:
+                    dmin, nn = self.nearest_neighbor(query, node.left,
+                                                     dmin=dmin, nn=nn)
+                    dist_region = self.__min_dist_region(query, node.right)
+                    if dist_region < dmin:
+                        # explore right subtree
+                        dmin, nn = self.nearest_neighbor(query, node.right,
+                                                         dmin=dmin, nn=nn)
+                else:
+                    dmin, nn = self.nearest_neighbor(query, node.right,
+                                                     dmin=dmin, nn=nn)
+                    dist_region = self.__min_dist_region(query, node.left)
+                    if dist_region < dmin:
+                        # explore left subtree
+                        dmin, nn = self.nearest_neighbor(query, node.left,
+                                                         dmin=dmin, nn=nn)
+
+        return dmin, nn
