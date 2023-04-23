@@ -113,7 +113,7 @@ class Tree:
         ymin, ymax = parent.ymin, parent.ymax
 
         if parent.split_x == True: # parent splits along x
-            # check if node is to the left or right of parent node
+            # check if parent is to the left or right of node
             if parent.x <= node.x:
                 xmin = parent.x
             else:
@@ -151,18 +151,17 @@ class Tree:
         if split_x: # split along x-axis
             # use middle node along x-axis to partition space
             node = TreeNode(xs[ix[mid]], ys[ix[mid]], True)
-            print(node)
             if parent != None:
                 # compute region's boundaries
                 bounds = self.__get_bounds(node, parent)
-                xmin, xmax = bounds[:2]
-                ymin, ymax = bounds[2:]
+                node.xmin, node.xmax = bounds[:2]
+                node.ymin, node.ymax = bounds[2:]
                 
             if mid > 0:
                 # select iy elements corresponding to ix[:mid]
                 sub_iy = self.__select(ix[:mid], iy)
                 # compute splitting axis based on variance rule
-                x_var, y_var = np.var(ix[:mid]), np.var(sub_iy)
+                x_var, y_var = np.var(xs[ix[:mid]]), np.var(ys[ix[:mid]])
                 split_x = True if x_var > y_var else False
                 # build left-subtree
                 node.left = self.__build_tree(xs, ys, ix[:mid], sub_iy,
@@ -170,37 +169,36 @@ class Tree:
 
             if mid + 1 < size:
                 sub_iy = self.__select(ix[mid+1:], iy)
-                x_var, y_var = np.var(ix[mid+1:]), np.var(sub_iy)
+                x_var, y_var = np.var(xs[ix[mid+1:]]), np.var(ys[ix[mid+1:]])
                 split_x = True if x_var > y_var else False
                 # build right-subtree
                 node.right = self.__build_tree(xs, ys, ix[mid+1:], sub_iy,
                                               split_x, node)
 
         else: # split along y-axis
-           node = TreeNode(xs[iy[mid]], ys[iy[mid]], False)
-           print(node)
-           if parent != None:
-               bounds = self.__get_bounds(node, parent)
-               xmin, xmax = bounds[:2]
-               ymin, ymax = bounds[2:]
+            node = TreeNode(xs[iy[mid]], ys[iy[mid]], False)
+            if parent != None:
+                bounds = self.__get_bounds(node, parent)
+                node.xmin, node.xmax = bounds[:2]
+                node.ymin, node.ymax = bounds[2:]
 
-           if mid > 0:
-               # select ix elements corresponding to iy[:mid]
-               sub_ix = self.__select(iy[:mid], ix)
-               x_var, y_var = np.var(sub_ix), np.var(iy[:mid])
-               split_x = True if x_var > y_var else False
-               # build left-subtree
-               node.left = self.__build_tree(xs, ys, sub_ix, iy[:mid],
-                                             split_x, node)
+            if mid > 0:
+                # select ix elements corresponding to iy[:mid]
+                sub_ix = self.__select(iy[:mid], ix)
+                x_var, y_var = np.var(xs[iy[:mid]]), np.var(ys[iy[:mid]])
+                split_x = True if x_var > y_var else False
+                # build left-subtree
+                node.left = self.__build_tree(xs, ys, sub_ix, iy[:mid],
+                                              split_x, node)
 
-           if mid + 1 < size:
-               # select ix elements corresponding to iy[:mid]
-               sub_ix = self.__select(iy[mid+1:], ix)
-               x_var, y_var = np.var(sub_ix), np.var(iy[mid+1:])
-               split_x = True if x_var > y_var else False
-               # build left-subtree
-               node.left = self.__build_tree(xs, ys, sub_ix, iy[mid+1:],
-                                             split_x, node)
+            if mid + 1 < size:
+                # select ix elements corresponding to iy[:mid]
+                sub_ix = self.__select(iy[mid+1:], ix)
+                x_var, y_var = np.var(xs[iy[mid+1:]]), np.var(ys[iy[mid+1:]])
+                split_x = True if x_var > y_var else False
+                # build right-subtree
+                node.right = self.__build_tree(xs, ys, sub_ix, iy[mid+1:],
+                                              split_x, node)
 
         # once it finishes recursive calls, return subtree's root node
         return node
