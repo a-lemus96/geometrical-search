@@ -6,6 +6,7 @@ import pandas as pd
 from typing import List, Tuple
 
 import tree as kd
+import vptree as vpt
 
 def latlon_to_global(coords: np.ndarray) -> Tuple[float]:
     """Converts latitude and longitude coordinates to local x, y positions
@@ -102,3 +103,24 @@ for query in zip(points[0], points[1]):
     plt.plot([nearest.x, query[0]], [nearest.y, query[1]], color='k')
 
 plt.savefig('out/nearest.png')
+
+# plot query points and their nearest neighbors using VpTree
+plt.figure()
+# create vp-tree using ecobike data
+locs = []
+for coord in locs_bike:
+    locs.append(coord)
+vptree = vpt.VpTree(locs)
+
+plt.scatter(locs_bike[:, 0], locs_bike[:, 1], linewidth=0.05)
+plt.gca().set_aspect('equal', adjustable='box')
+points = plot_random(n=30)
+# compute and plot nearest neighbor for all random points
+nearest_neighbors = []
+for query in zip(points[0], points[1]):
+    nearest, _ = vptree.nearest_neighbor(query)
+    # plot node and draw a line to the query point
+    plt.scatter([nearest.vp[0]], [nearest.vp[1]], color='red', linewidth=0.05)
+    plt.plot([nearest.vp[0], query[0]], [nearest.vp[1], query[1]], color='k')
+
+plt.savefig('out/nearest_vpt.png')
